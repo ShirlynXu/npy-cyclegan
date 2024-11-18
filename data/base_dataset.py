@@ -111,6 +111,11 @@ def get_transform(opt, params=None, grayscale=False, method=transforms.Interpola
             transform_list += [transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))]
     return transforms.Compose(transform_list)
 
+def get_ct_transform(img): 
+    import torch   
+    img = np.expand_dims(img.astype(np.float32),0)/2000-0.5
+    return torch.from_numpy(img)
+
 
 def __transforms2pil_resize(method):
     mapper = {transforms.InterpolationMode.BILINEAR: Image.BILINEAR,

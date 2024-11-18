@@ -1,8 +1,9 @@
 import os
-from data.base_dataset import BaseDataset, get_transform
+from data.base_dataset import BaseDataset, get_transform, get_ct_transform
 from data.image_folder import make_dataset
 from PIL import Image
 import random
+import numpy as np
 
 
 class UnalignedDataset(BaseDataset):
@@ -54,11 +55,22 @@ class UnalignedDataset(BaseDataset):
         else:   # randomize the index for domain B to avoid fixed pairs.
             index_B = random.randint(0, self.B_size - 1)
         B_path = self.B_paths[index_B]
-        A_img = Image.open(A_path).convert('RGB')
-        B_img = Image.open(B_path).convert('RGB')
+        if os.path.splitext(A_path)[-1] == '.npy':
+            # A_img = Image.fromarray(np.load(A_path).astype(float).squeeze()).convert('F')
+            A_img = np.load(A_path).astype(float)
+        else:
+            A_img = Image.open(A_path).convert('RGB')
+        
+        if os.path.splitext(B_path)[-1] == '.npy':
+            # B_img = Image.fromarray(np.load(B_path).astype(float).squeeze()).convert('F')
+            B_img = np.load(B_path).astype(float)
+        else:
+            B_img = Image.open(B_path).convert('RGB')
         # apply image transformation
-        A = self.transform_A(A_img)
-        B = self.transform_B(B_img)
+        # A = self.transform_A(A_img)
+        # B = self.transform_B(B_img)
+        A = get_ct_transform(A_img)
+        B = get_ct_transform(B_img)
 
         return {'A': A, 'B': B, 'A_paths': A_path, 'B_paths': B_path}
 
