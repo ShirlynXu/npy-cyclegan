@@ -111,9 +111,10 @@ def get_transform(opt, params=None, grayscale=False, method=transforms.Interpola
             transform_list += [transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))]
     return transforms.Compose(transform_list)
 
-def get_ct_transform(img): 
-    import torch   
-    img = np.expand_dims(img.astype(np.float32),0)/2000-0.5
+def get_ct_transform(img,amin=-1000,amax=1500):
+    """expand_dims, clip, normalize to (-1,1), and convert to tensor"""
+    import torch  
+    img = np.expand_dims((np.clip(img.astype(np.float32),amin,amax)+1000)*2/(amax-amin)-1,0)
     return torch.from_numpy(img)
 
 

@@ -22,7 +22,7 @@ def tensor2im(input_image, imtype=np.uint16):
         # if image_numpy.shape[0] == 1:  # grayscale to RGB
         #     image_numpy = np.tile(image_numpy, (3, 1, 1))
         # image_numpy = (np.transpose(image_numpy, (1, 2, 0)) + 1) / 2.0 * 255.0  # post-processing: tranpose and scaling
-        image_numpy = (np.transpose(image_numpy, (1, 2, 0)) + 0.5) * 2000  # for CT image range
+        image_numpy = (np.transpose(image_numpy, (1, 2, 0)) + 1) * 1250  # for CT image range
         # imtype = np.float32
     else:  # if it is a numpy array, do nothing
         image_numpy = input_image

@@ -33,16 +33,12 @@ parentdir = os.path.dirname(os.path.dirname(currentdir))
 sys.path.insert(0,parentdir)
 sys.path.insert(0,os.path.join(currentdir,'data'))
 from options.test_options import TestOptions
-from data import create_dataset
 from models import create_model
-from util.visualizer import save_images
-from util import html
-import io_utils
 from data_preparation import parse_sample
 from systemsetup import DATA_PATH
 import numpy as np
 from base_dataset import get_ct_transform
-import alg_lib
+import io_utils
 
 try:
     import wandb
@@ -58,8 +54,6 @@ if __name__ == '__main__':
     opt.serial_batches = True  # disable data shuffling; comment this line if results on randomly chosen images are needed.
     opt.no_flip = True    # no flip; comment this line if results on flipped images are needed.
     opt.display_id = -1   # no visdom display; the test code saves the results to a HTML file.
-    from pdb import set_trace
-    set_trace()
     model = create_model(opt)      # create a model given opt.model and other options
     model.setup(opt)               # regular setup: load and print networks; create schedulers
     
@@ -76,20 +70,23 @@ if __name__ == '__main__':
         pt_folders.append(os.path.join(DATA_PATH,pt,for_uid))
     # pt_folders = ['/home/lewes/data2/binary_data/1.2.246.352.63.3.5691628504634420590.7038749635106406285/1.2.246.352.63.3.5691628504634420590.7038749635106406285']
     # pt_folders = ['/home/lewes/data2/binary_data/5520220620140039/1.2.840.113654.2.382.123.5520220620140039']
-    pt_folders = ['/mnt/data2/binary_data/1.2.246.352.221.5235969946633618206.15835206829406500265/1.2.246.352.221.5235969946633618206.15835206829406500265/1.2.246.352.221.4866905281094717427.15961879644663748762']
+    # pt_folders = ['/mnt/gcp/radtruth/2024092208233367/1.3.6.1.4.1.57553.555.20240922200619.524.10025/1.3.6.1.4.1.57553.555.20240922200619.524.10026']
+    cbct_list = np.load('/mnt/data2/icon_cohort/cbct_set.npy',allow_pickle=True).item()
+    pt_folders = [os.path.join('/mnt/data2/binary_data',tag) for tag in cbct_list]
     for pt_folder in pt_folders:
         cbct_file = os.path.join(pt_folder,'image.bin.gz')
         ori,sp,arr = io_utils.read_image_arr(cbct_file)
         # arr = alg_lib.brain_t1_patch_normalize3(arr) # 0~2000
-        arr = (np.clip(arr, -1000,1000)+1000)
         synthetic_ct_img = np.zeros(arr.shape)-1000
         for i in range(arr.shape[-1]):
             img_tensor = get_ct_transform(arr[...,i])
             data = {'A':img_tensor,'B':img_tensor,'A_paths':None,'B_paths':None}
             model.set_input(data)  # unpack data from data loader
             ct_slice = model.netG_A(model.real_A)
-            synthetic_ct_img[...,i] = (ct_slice.cpu().detach().numpy()+0.5)*2000 - 1000
-        ct_file = os.path.join(pt_folder,'CT.synthetic.bin')
+            slc = ct_slice.cpu().detach().numpy()
+            synthetic_ct_img[...,i] = (slc+1)*1250 - 1000
+        print(synthetic_ct_img.min(),synthetic_ct_img.max())
+        ct_file = os.path.join(pt_folder,'CT.cyclegan.bin.gz')
+        # ct_file = os.path.join('/mnt/data2','CT.synthetic.bin.gz')
         print(ct_file)
-        io_utils.write_gzip(ct_file,synthetic_ct_img,ori,sp)
-        break
+        io_utils.write_gzip(ct_file,synthetic_ct_img.astype(np.int16),ori,sp)
